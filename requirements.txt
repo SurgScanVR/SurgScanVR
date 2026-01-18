@@ -1,0 +1,17 @@
+# SurgScanVR - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Deep Learning
+torch>=2.0.0
+nnunetv2>=2.2
+
+# Medical Imaging
+nibabel>=5.0.0
+
+# Scientific Computing
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-image>=0.21.0
+
+# 3D Mesh Processing
+trimesh>=4.0.0
