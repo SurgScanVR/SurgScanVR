@@ -6,8 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
-using UnityEngine.Events; // Event sistemi için şart
-// MRTK Kütüphaneleri
+using UnityEngine.Events; // Required for Event system
+// MRTK Libraries
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.UI.BoundsControl;
 
@@ -21,12 +21,12 @@ public class MeshReceiver : MonoBehaviour
     public float meshScale = 0.01f;
 
     [Header("Prefab Settings")]
-    [Tooltip("DİKKAT: Bu prefabın içindeki BoundsControl componenti 'tik'i kaldırılmış (pasif) olmalıdır!")]
+    [Tooltip("ATTENTION: The BoundsControl component inside this prefab must be unchecked (inactive)!")]
     public GameObject organPrefab;
 
     [Header("Hierarchy Settings")]
-    // Hangi organın (Child) hangi organa (Parent) bağlanacağını belirler.
-    // Örnek: Tümör (9) -> Karaciğer (8)
+    // Determines which organ (Child) attaches to which organ (Parent).
+    // Example: Tumor (9) -> Liver (8)
     public List<HierarchyRule> hierarchyRules = new List<HierarchyRule>()
     {
         new HierarchyRule { childLabel = 9, parentLabel = 8 }
@@ -39,7 +39,7 @@ public class MeshReceiver : MonoBehaviour
         public int parentLabel;
     }
 
-    // --- HASTA VERİSİ YAPILARI (JSON için) ---
+    // --- PATIENT DATA STRUCTURES (for JSON) ---
     [System.Serializable]
     public class PatientData
     {
@@ -74,15 +74,15 @@ public class MeshReceiver : MonoBehaviour
     }
     // ----------------------------------------
 
-    // Event: Veri geldiğinde UI scriptine haber vermek için
+    // Event: To notify the UI script when data is received
     [Header("Events")]
     public UnityEvent<PatientData> OnPatientDataReceived;
 
-    // Hafıza yönetimi
+    // Memory management
     private Dictionary<int, GameObject> createdOrgans = new Dictionary<int, GameObject>();
     private PatientData currentPatientData;
 
-    // Server durumu
+    // Server state
     public bool isServerRunning = false;
     private TcpListener tcpListener;
     private bool shouldStop = false;
@@ -96,7 +96,7 @@ public class MeshReceiver : MonoBehaviour
     void Start()
     {
         if (meshParent == null) meshParent = this.transform;
-        if (organPrefab == null) Debug.LogError("Lütfen Inspector'dan Organ Prefab'ı atayın!");
+        if (organPrefab == null) Debug.LogError("Please assign Organ Prefab from Inspector!");
 
         StartServer();
     }
@@ -120,7 +120,7 @@ public class MeshReceiver : MonoBehaviour
         tcpListener = new TcpListener(IPAddress.Any, port);
         tcpListener.Start();
         isServerRunning = true;
-        Debug.Log($"TCP Server Başlatıldı. Port: {port}");
+        Debug.Log($"TCP Server Started. Port: {port}");
 
         while (!shouldStop)
         {
@@ -137,7 +137,7 @@ public class MeshReceiver : MonoBehaviour
     {
         NetworkStream stream = client.GetStream();
 
-        // 1. ADIM: HASTA JSON VERİSİNİ AL
+        // STEP 1: RECEIVE PATIENT JSON DATA
         byte[] jsonSizeBuff = new byte[4];
         yield return StartCoroutine(ReadExactly(stream, jsonSizeBuff, 4));
         int jsonSize = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(jsonSizeBuff, 0));
@@ -148,18 +148,18 @@ public class MeshReceiver : MonoBehaviour
             yield return StartCoroutine(ReadExactly(stream, jsonData, jsonSize));
             string jsonContent = Encoding.UTF8.GetString(jsonData);
 
-            // JSON'ı parse et ve Event fırlat
+            // Parse JSON and fire Event
             ProcessPatientData(jsonContent);
         }
 
-        // 2. ADIM: MESH SAYISINI AL
+        // STEP 2: RECEIVE MESH COUNT
         byte[] countBuff = new byte[4];
         yield return StartCoroutine(ReadExactly(stream, countBuff, 4));
         int meshCount = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(countBuff, 0));
 
-        Debug.Log($"Gelen mesh sayısı: {meshCount}");
+        Debug.Log($"Received mesh count: {meshCount}");
 
-        // 3. ADIM: MESHLERİ TEKER TEKER AL VE OLUŞTUR
+        // STEP 3: RECEIVE AND CREATE MESHES ONE BY ONE
         for (int i = 0; i < meshCount; i++)
         {
             // Label
@@ -167,22 +167,22 @@ public class MeshReceiver : MonoBehaviour
             yield return StartCoroutine(ReadExactly(stream, lblBuff, 4));
             int organLabel = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(lblBuff, 0));
 
-            // Dosya Boyutu
+            // File Size
             byte[] sizeBuff = new byte[4];
             yield return StartCoroutine(ReadExactly(stream, sizeBuff, 4));
             int fileSize = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(sizeBuff, 0));
 
-            // Mesh Datası (OBJ formatında string)
+            // Mesh Data (string in OBJ format)
             byte[] objData = new byte[fileSize];
             yield return StartCoroutine(ReadExactly(stream, objData, fileSize));
             string objContent = Encoding.UTF8.GetString(objData);
 
-            // Mesh oluştur
+            // Create Mesh
             CreateMeshFromOBJ(objContent, organLabel);
             yield return null;
         }
 
-        Debug.Log("Veri alımı tamamlandı.");
+        Debug.Log("Data reception completed.");
         client.Close();
     }
 
@@ -191,13 +191,13 @@ public class MeshReceiver : MonoBehaviour
         try
         {
             currentPatientData = JsonUtility.FromJson<PatientData>(jsonContent);
-            // UI Scriptine haber ver
+            // Notify UI Script
             OnPatientDataReceived?.Invoke(currentPatientData);
-            Debug.Log("Hasta verisi alındı ve UI güncellendi.");
+            Debug.Log("Patient data received and UI updated.");
         }
         catch (Exception e)
         {
-            Debug.LogError($"JSON Hatası: {e.Message}");
+            Debug.LogError($"JSON Error: {e.Message}");
         }
     }
 
@@ -218,7 +218,7 @@ public class MeshReceiver : MonoBehaviour
 
     void CreateMeshFromOBJ(string objContent, int organLabel)
     {
-        // --- A. OBJ PARSE ETME ---
+        // --- A. PARSE OBJ ---
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
@@ -255,11 +255,11 @@ public class MeshReceiver : MonoBehaviour
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
-        // --- B. PREFAB YARATMA (GÜVENLİ YÖNTEM) ---
+        // --- B. CREATE PREFAB (SAFE METHOD) ---
         GameObject newOrgan = null;
         if (organPrefab != null)
         {
-            // İnaktif başlatıyoruz ki BoundsControl hata vermesin
+            // Start inactive so BoundsControl doesn't error
             newOrgan = Instantiate(organPrefab, meshParent);
             newOrgan.SetActive(false);
         }
@@ -274,7 +274,7 @@ public class MeshReceiver : MonoBehaviour
         newOrgan.transform.localPosition = Vector3.zero;
         newOrgan.transform.localRotation = Quaternion.identity;
 
-        // Mesh ve Collider Ata
+        // Assign Mesh and Collider
         MeshFilter mf = newOrgan.GetComponent<MeshFilter>();
         if (mf == null) mf = newOrgan.AddComponent<MeshFilter>();
         mf.mesh = mesh;
@@ -282,36 +282,36 @@ public class MeshReceiver : MonoBehaviour
         MeshCollider mc = newOrgan.GetComponent<MeshCollider>();
         if (mc == null) mc = newOrgan.AddComponent<MeshCollider>();
         mc.sharedMesh = mesh;
-        mc.convex = true; // MRTK etkileşimi için şart
+        mc.convex = true; // Required for MRTK interaction
 
-        // Renk Ata
+        // Assign Color
         MeshRenderer mr = newOrgan.GetComponent<MeshRenderer>();
         if (mr != null)
             mr.material.color = organColors[(organLabel - 1) % organColors.Length];
 
-        // Listeye ekle
+        // Add to list
         if (createdOrgans.ContainsKey(organLabel)) createdOrgans[organLabel] = newOrgan;
         else createdOrgans.Add(organLabel, newOrgan);
 
-        // --- C. HİYERARŞİ AYARI (Tümör -> Karaciğer) ---
+        // --- C. HIERARCHY SETUP (Tumor -> Liver) ---
         foreach (var rule in hierarchyRules)
         {
-            // Yeni gelen Child ise, Baba var mı bak
+            // If new object is Child, check if Parent exists
             if (rule.childLabel == organLabel && createdOrgans.ContainsKey(rule.parentLabel))
             {
                 newOrgan.transform.SetParent(createdOrgans[rule.parentLabel].transform);
             }
-            // Yeni gelen Baba ise, bekleyen Çocuk var mı bak
+            // If new object is Parent, check if awaiting Child exists
             else if (rule.parentLabel == organLabel && createdOrgans.ContainsKey(rule.childLabel))
             {
                 createdOrgans[rule.childLabel].transform.SetParent(newOrgan.transform);
             }
         }
 
-        // --- D. AKTİFLEŞTİRME ---
-        newOrgan.SetActive(true); // Collider artık hazır, aktif edebiliriz.
+        // --- D. ACTIVATION ---
+        newOrgan.SetActive(true); // Collider is ready, we can activate.
 
-        // Bounds Control'ü güvenli bir şekilde aç
+        // Safely enable Bounds Control
         var boundsCtrl = newOrgan.GetComponent<BoundsControl>();
         if (boundsCtrl != null) boundsCtrl.enabled = true;
         else

@@ -5,16 +5,16 @@ using TMPro;
 
 public class PatientUIManager : MonoBehaviour
 {
-    [Header("Veri Kaynağı")]
+    [Header("Data Source")]
     public MeshReceiver meshReceiver;
 
-    [Header("UI Metin Alanları")]
-    [Tooltip("Sol Taraf: Kimlik Bilgileri")]
+    [Header("UI Text Fields")]
+    [Tooltip("Left Side: ID Information")]
     public TextMeshPro textPatientInfo;
 
-    [Tooltip("Sağ Taraf: Analiz ve Liste (Birleşik)")]
+    [Tooltip("Right Side: Analysis and List (Combined)")]
     public TextMeshPro textAnalysisInfo;
-    // textTumorList değişkenini sildik, artık gerek yok.
+    // Removed textTumorList variable, no longer needed.
 
     private void OnEnable()
     {
@@ -30,31 +30,31 @@ public class PatientUIManager : MonoBehaviour
     {
         if (data == null) return;
 
-        // --- 1. SOL TARAFI DOLDUR (KİMLİK) ---
+        // --- 1. FILL LEFT SIDE (ID) ---
         if (data.hasta != null && textPatientInfo != null)
         {
-            textPatientInfo.text = $"<size=120%><b>HASTA KİMLİK KARTI</b></size>\n" +
-                                   $"--------------------------------\n" + // Unicode hatası için düz tire
-                                   $"<b>Ad Soyad:</b> {data.hasta.ad}\n" +
-                                   $"<b>Yaş:</b> {data.hasta.yas}\n" +
-                                   $"<b>Cinsiyet:</b> {data.hasta.cinsiyet}\n" +
-                                   $"<b>Kronik:</b> {data.hasta.kronik_hastalik}\n\n" +
-                                   $"<color=#FFC107><b>Doktor Notu:</b></color>\n" +
+            textPatientInfo.text = $"<size=120%><b>PATIENT ID CARD</b></size>\n" +
+                                   $"--------------------------------\n" + // Dash to avoid unicode issues
+                                   $"<b>Name Surname:</b> {data.hasta.ad}\n" +
+                                   $"<b>Age:</b> {data.hasta.yas}\n" +
+                                   $"<b>Gender:</b> {data.hasta.cinsiyet}\n" +
+                                   $"<b>Chronic:</b> {data.hasta.kronik_hastalik}\n\n" +
+                                   $"<color=#FFC107><b>Doctor Note:</b></color>\n" +
                                    $"<i>{data.hasta.doktor_notu}</i>";
         }
 
-        // --- 2. SAĞ TARAFI DOLDUR (ANALİZ + LİSTE BİRLEŞİK) ---
+        // --- 2. FILL RIGHT SIDE (ANALYSIS + LIST COMBINED) ---
         if (data.analiz != null && textAnalysisInfo != null)
         {
-            // A) Önce Analiz Başlığını ve Verilerini Hazırla
-            string combinedText = $"<size=120%><b>ORGAN ANALİZİ</b></size>\n" +
+            // A) Prepare Analysis Header and Data first
+            string combinedText = $"<size=120%><b>ORGAN ANALYSIS</b></size>\n" +
                                   $"--------------------------------\n" +
-                                  $"<b>Karaciğer:</b> {data.analiz.liver_volume_ml:F1} ml\n" +
-                                  $"<b>Tümör Sayısı:</b> {data.analiz.tumor_count} adet\n" +
-                                  $"<b>Tümör Yükü:</b> {data.analiz.total_tumor_volume_ml:F1} ml\n\n";
+                                  $"<b>Liver:</b> {data.analiz.liver_volume_ml:F1} ml\n" +
+                                  $"<b>Tumor Count:</b> {data.analiz.tumor_count} count\n" +
+                                  $"<b>Tumor Load:</b> {data.analiz.total_tumor_volume_ml:F1} ml\n\n";
 
-            // B) Araya Boşluk Koyup Tümör Listesini Ekle
-            combinedText += $"<size=110%><b>TÜMÖR DETAYLARI</b></size>\n" +
+            // B) Add Space then Tumor List
+            combinedText += $"<size=110%><b>TUMOR DETAILS</b></size>\n" +
                             $"--------------------------------\n";
 
             if (data.analiz.tumors != null && data.analiz.tumors.Count > 0)
@@ -62,24 +62,24 @@ public class PatientUIManager : MonoBehaviour
                 int counter = 0;
                 foreach (var tumor in data.analiz.tumors)
                 {
-                    // Her satırı sola hizalı yaz
-                    combinedText += $"<align=center> Tümör {tumor.id}: <b>{tumor.volume_ml:F1} ml</b></align>\n";
+                    // Align each line to center
+                    combinedText += $"<align=center> Tumor {tumor.id}: <b>{tumor.volume_ml:F1} ml</b></align>\n";
 
-                    // Liste çok uzarsa kes (Panelden taşmasın)
+                    // Cut if list is too long (To not overflow the panel)
                     counter++;
                     if (counter >= 8)
                     {
-                        combinedText += "<i>...ve diğerleri</i>";
+                        combinedText += "<i>...and others</i>";
                         break;
                     }
                 }
             }
             else
             {
-                combinedText += "Tümör tespit edilmedi.";
+                combinedText += "No tumor detected.";
             }
 
-            // C) Hepsini Tek Seferde Ekrana Bas
+            // C) Print All to Screen at Once
             textAnalysisInfo.text = combinedText;
         }
     }
