@@ -199,6 +199,7 @@ For questions or feedback, please open an issue on GitHub.
 
 - **Pre-trained Model**:
   > Murugesan, G. K., Van Oss, J., & McCrumb, D. (2024). Pretrained model for 3D semantic image segmentation of the liver and liver lesions from ct scan (v1.0.0). Zenodo. [https://doi.org/10.5281/zenodo.11582728](https://doi.org/10.5281/zenodo.11582728)
+  > 
 
 - [nnU-Net](https://github.com/MIC-DKFZ/nnUNet) - Self-configuring medical image segmentation
 - [nibabel](https://nipy.org/nibabel/) - NIfTI file handling
